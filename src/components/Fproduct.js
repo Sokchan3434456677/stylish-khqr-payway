@@ -5,7 +5,7 @@ import ModelFade from './ModelFade'; // Import the modal component
 import { useCart } from './CartContext'; // Import the cart context
 import useFetch from './hooks/useFetch'; // Custom hook for fetching products
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/products';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/products';
 
 function Fproduct() {
   const { data: products, error, loading } = useFetch(API_URL); // Using custom hook for fetching data
