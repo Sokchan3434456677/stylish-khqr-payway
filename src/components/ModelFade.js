@@ -1,24 +1,22 @@
 import React, { useState } from 'react';
-import { useCart } from './CartContext';
+import { useCart } from './CartContext'; // Assuming you have a CartContext
 
 function CartModal() {
   const { cart, removeFromCart } = useCart();
   const [qrImage, setQrImage] = useState(null);
   const [transactionUrl, setTransactionUrl] = useState(null);
-  const [error, setError] = useState(null); // Added for error display
-  const [loading, setLoading] = useState(false); // Added for loading state
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
+  // Calculate total amount
   const totalAmount = cart.reduce(
     (total, item) => total + parseFloat(item.price.replace('$', '')) * item.quantity,
     0
   );
 
-  // Base URL for the API
-  const BASE_URL = 'https://api-uat145.phillipbank.com.kh:8441';
-
   // Generate Token
   const generateToken = async () => {
-    const tokenUrl = `${BASE_URL}/oauth/token`;
+    const tokenUrl = '/api/oauth/token'; // Proxy endpoint
     const clientId = '9501d6df-d0c3-4f33-8bf1-eee5cc7a486e';
     const clientSecret = '59Pr4UuXwkfZX7QDVOh143Vq3UEEmplEEPvJmT2T';
 
@@ -48,7 +46,7 @@ function CartModal() {
     }
   };
 
-  // Initiate Transaction
+  // Handle PhillipBank Checkout
   const handlePhillipBankCheckout = async () => {
     setLoading(true); // Show loading state
     setError(null); // Reset error state
@@ -79,8 +77,8 @@ function CartModal() {
         fail_redirect: `https://www.sample.com.kh/api/confirm-paymentgateways?tran_id=${transactionId}&status=fail`,
       };
 
-      // Initiate transaction
-      const response = await fetch(`${BASE_URL}/api/init/transaction`, {
+      // Initiate transaction via proxy
+      const response = await fetch('/api/api/init/transaction', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -95,7 +93,7 @@ function CartModal() {
       }
 
       const data = await response.json();
-      console.log('Transaction Response:', data); // Debug API response
+      console.log('Transaction Response:', data);
 
       if (data.success) {
         setTransactionUrl(data.data.url);
@@ -114,35 +112,7 @@ function CartModal() {
     }
   };
 
-  // Check Transaction Status (Optional)
-  const checkTransactionStatus = async (transactionId) => {
-    try {
-      const token = await generateToken();
-      const response = await fetch(`${BASE_URL}/api/check/transaction`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          merchant_id: '55368',
-          txn_id: transactionId,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to check transaction status! Status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('Transaction Status:', data);
-      return data.data.txn_status; // Returns 'PENDING', 'SUCCESS', or 'FAILED'
-    } catch (error) {
-      console.error('Error checking transaction status:', error);
-      throw error;
-    }
-  };
-
+  // Render empty cart message if cart is empty
   if (cart.length === 0) {
     return <div>Your cart is empty.</div>;
   }
