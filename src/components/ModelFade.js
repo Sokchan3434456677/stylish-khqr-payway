@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { useCart } from './CartContext'; // Assuming you have a CartContext
+import React, { useState, useEffect } from 'react';
+import { useCart } from './CartContext';
 
 function CartModal() {
   const { cart, removeFromCart } = useCart();
   const [qrImage, setQrImage] = useState(null);
   const [transactionUrl, setTransactionUrl] = useState(null);
+  const [transactionId, setTransactionId] = useState(null); // Store transaction ID for checking status
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -44,6 +45,54 @@ function CartModal() {
     } catch (error) {
       throw error;
     }
+  };
+
+  // Check Transaction Status
+  const checkTransactionStatus = async (transactionId) => {
+    try {
+      const token = await generateToken();
+      const response = await fetch('/api/api/check/transaction', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          merchant_id: '55368',
+          txn_id: transactionId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to check transaction status! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Transaction Status:', data);
+      return data.data.txn_status; // Returns 'PENDING', 'SUCCESS', or 'FAILED'
+    } catch (error) {
+      console.error('Error checking transaction status:', error);
+      throw error;
+    }
+  };
+
+  // Poll Transaction Status
+  const pollTransactionStatus = async (transactionId) => {
+    const interval = setInterval(async () => {
+      try {
+        const status = await checkTransactionStatus(transactionId);
+        if (status === 'SUCCESS') {
+          clearInterval(interval); // Stop polling
+          alert('Thank You! Your payment was successful.'); // Show success alert
+        } else if (status === 'FAILED') {
+          clearInterval(interval); // Stop polling
+          setError('Payment failed. Please try again.');
+        }
+      } catch (error) {
+        clearInterval(interval); // Stop polling on error
+        setError('Error checking payment status. Please contact support.');
+      }
+    }, 5000); // Check every 5 seconds
   };
 
   // Handle PhillipBank Checkout
@@ -98,9 +147,13 @@ function CartModal() {
       if (data.success) {
         setTransactionUrl(data.data.url);
         setQrImage(data.data.qr);
+        setTransactionId(transactionId); // Store transaction ID for status checking
         if (!data.data.qr) {
           setError('QR code not received from API');
         }
+
+        // Start polling transaction status
+        pollTransactionStatus(transactionId);
       } else {
         setError(`Transaction failed: ${data.message}`);
       }
