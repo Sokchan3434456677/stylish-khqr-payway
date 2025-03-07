@@ -162,12 +162,12 @@ function CartModal() {
     (total, item) => total + parseFloat(item.price.replace('$', '')) * item.quantity,
     0
   );
-
+  
   const generateToken = async () => {
-    const tokenUrl = 'https://api-uat145.phillipbank.com.kh:8441/oauth/token';
+    const tokenUrl = '/api/oauth/token'; // Use the proxy endpoint
     const clientId = '9501d6df-d0c3-4f33-8bf1-eee5cc7a486e';
     const clientSecret = '59Pr4UuXwkfZX7QDVOh143Vq3UEEmplEEPvJmT2T';
-
+  
     try {
       const response = await fetch(tokenUrl, {
         method: 'POST',
@@ -181,18 +181,48 @@ function CartModal() {
           scope: 'txn-create',
         }),
       });
-
+  
       if (!response.ok) {
         throw new Error(`Token generation failed! Status: ${response.status}`);
       }
-
+  
       const data = await response.json();
-      console.log('Token Response:', data); // Debug token response
+      console.log('Token Response:', data);
       return data.access_token;
     } catch (error) {
       throw error;
     }
   };
+  // const generateToken = async () => {
+  //   const tokenUrl = 'https://api-uat145.phillipbank.com.kh:8441/oauth/token';
+  //   const clientId = '9501d6df-d0c3-4f33-8bf1-eee5cc7a486e';
+  //   const clientSecret = '59Pr4UuXwkfZX7QDVOh143Vq3UEEmplEEPvJmT2T';
+
+  //   try {
+  //     const response = await fetch(tokenUrl, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         grant_type: 'client_credentials',
+  //         client_id: clientId,
+  //         client_secret: clientSecret,
+  //         scope: 'txn-create',
+  //       }),
+  //     });
+
+  //     if (!response.ok) {
+  //       throw new Error(`Token generation failed! Status: ${response.status}`);
+  //     }
+
+  //     const data = await response.json();
+  //     console.log('Token Response:', data); // Debug token response
+  //     return data.access_token;
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // };
 
   const handlePhillipBankCheckout = async () => {
     setLoading(true); // Show loading state
